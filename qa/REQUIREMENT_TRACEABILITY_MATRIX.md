@@ -1,6 +1,6 @@
 # Requirement Traceability Matrix
 
-Generated at: 2026-08-01 23:51:37 +0530
+Generated at: 2026-08-02 00:07:30 +0530
 
 | ID | assignment requirement | expected evidence | implementation file | test/check | status | issue ID | reviewer comments |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -16,7 +16,7 @@ Generated at: 2026-08-01 23:51:37 +0530
 | R10 | Discount/revenue validation | Raw sign conventions and positive reporting convention consistent | README.md; src/run_pipeline.py; sql/; outputs/; deliverable markdown; qa/ | pytest tests + validation_checks.csv + manual doc inspection | PASS |  | Evidence found in repository and generated QA outputs. |
 | R11 | Data quality validation | Nulls, duplicates, outliers, invalid values, coverage, action handling | README.md; src/run_pipeline.py; sql/; outputs/; deliverable markdown; qa/ | pytest tests + validation_checks.csv + manual doc inspection | PASS |  | Evidence found in repository and generated QA outputs. |
 | R12 | Customer analysis | Retention, distributions, concentration, segments, profiles, CIs | README.md; src/run_pipeline.py; sql/; outputs/; deliverable markdown; qa/ | pytest tests + validation_checks.csv + manual doc inspection | PASS |  | Evidence found in repository and generated QA outputs. |
-| R13 | Campaign/coupon/promotion analysis | Exposure, redemption, type handling, pre/post, bias discussion | README.md; src/run_pipeline.py; sql/; outputs/; deliverable markdown; qa/ | pytest tests + validation_checks.csv + manual doc inspection | PASS | QA-003 | Bias-aware pre/post implemented; causal limitations documented. Medium improvement warning remains. |
+| R13 | Campaign/coupon/promotion analysis | Exposure, redemption, type handling, pre/post, bias discussion | README.md; src/run_pipeline.py; sql/; outputs/; deliverable markdown; qa/ | pytest tests + validation_checks.csv + manual doc inspection | PASS | QA-003 | Bias-aware pre/post implemented with dedicated campaign bias file; causal limitations documented. Low improvement warning remains. |
 | R14 | Quantitative appendix | Descriptive stats, CIs, tests, effects, regression/model, matrix, MDE | README.md; src/run_pipeline.py; sql/; outputs/; deliverable markdown; qa/ | pytest tests + validation_checks.csv + manual doc inspection | PASS |  | Evidence found in repository and generated QA outputs. |
 | R15 | Feature-ready dataset | Temporal observation/label windows, feature groups, preprocessing, leakage checks | README.md; src/run_pipeline.py; sql/; outputs/; deliverable markdown; qa/ | pytest tests + validation_checks.csv + manual doc inspection | PASS |  | Evidence found in repository and generated QA outputs. |
 | R16 | Matrix/similarity/PCA | Matrix definition, sparsity, normalization, cosine, PCA, limitations | README.md; src/run_pipeline.py; sql/; outputs/; deliverable markdown; qa/ | pytest tests + validation_checks.csv + manual doc inspection | PASS |  | Evidence found in repository and generated QA outputs. |

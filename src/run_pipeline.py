@@ -276,9 +276,10 @@ def main():
     ensure_dirs(); maybe_download(); write_sql_files(); con=duckdb.connect(str(DB)); present=load_raw(con)
     missing=[k for k,v in present.items() if v is None and k!="causal_data"]
     if missing: raise SystemExit(f"Missing required raw files: {missing}")
-    run_sql(con); features=build_features(con); counts=export_tables(con); charts=make_charts(con); st=analyze(con,features); write_docs(con,present,counts,charts,st)
+    run_sql(con); features=build_features(con); counts=export_tables(con); charts=make_charts(con); st=analyze(con,features); write_docs(con,present,counts,charts,st); from enrich_outputs import enrich_outputs; charts = enrich_outputs(ROOT, con, charts, st)
     print("Pipeline complete. Outputs and deliverables generated.")
 if __name__=="__main__": main()
+
 
 
 

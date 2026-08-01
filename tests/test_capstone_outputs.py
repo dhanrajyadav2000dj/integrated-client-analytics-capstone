@@ -37,7 +37,7 @@ def test_expected_outputs_and_charts_exist():
         assert path.exists(), f"Missing output table: {name}"
         assert path.stat().st_size > 0
     charts = list(CHARTS.glob("*.png"))
-    assert len(charts) >= 10
+    assert len(charts) >= 12
     assert all(p.stat().st_size > 1000 for p in charts)
 
 
@@ -134,3 +134,12 @@ def test_no_committed_secret_patterns_in_project_files():
         assert not any(marker in text for marker in secret_markers), f"Secret-like marker found in {rel}"
 
 
+
+
+def test_enriched_reviewer_documents_exist():
+    for rel in ["campaign_bias_analysis.md", "visual_evidence_interpretations.md"]:
+        path = ROOT / rel
+        assert path.exists(), f"Missing enriched reviewer document: {rel}"
+        assert path.stat().st_size > 500
+    assert (CHARTS / "11_model_coefficients.png").exists()
+    assert (CHARTS / "12_experiment_mde.png").exists()

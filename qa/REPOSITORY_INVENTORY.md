@@ -1,6 +1,6 @@
 # Repository Inventory
 
-Generated at: 2026-08-01 23:51:37 +0530
+Generated at: 2026-08-02 00:07:30 +0530
 
 | file path | purpose | requirement supported | present/missing | runnable/non-runnable | reviewer notes |
 | --- | --- | --- | --- | --- | --- |
@@ -8,6 +8,7 @@ Generated at: 2026-08-01 23:51:37 +0530
 | README.md | setup and reproducibility | capstone deliverable or QA evidence | present | non-runnable | relative project path; generated/raw data separated |
 | ai_assistance_declaration.md | deliverable/supporting file | capstone deliverable or QA evidence | present | non-runnable | relative project path; generated/raw data separated |
 | assumptions_and_limitations.md | deliverable/supporting file | capstone deliverable or QA evidence | present | non-runnable | relative project path; generated/raw data separated |
+| campaign_bias_analysis.md | deliverable/supporting file | capstone deliverable or QA evidence | present | non-runnable | relative project path; generated/raw data separated |
 | data/processed/capstone.duckdb | deliverable/supporting file | capstone deliverable or QA evidence | present | non-runnable | relative project path; generated/raw data separated |
 | feature_dictionary.md | deliverable/supporting file | capstone deliverable or QA evidence | present | non-runnable | relative project path; generated/raw data separated |
 | final_recommendation_memo.md | deliverable/supporting file | capstone deliverable or QA evidence | present | non-runnable | relative project path; generated/raw data separated |
@@ -24,6 +25,8 @@ Generated at: 2026-08-01 23:51:37 +0530
 | outputs/charts/08_discount_sales.png | visual evidence | capstone deliverable or QA evidence | present | non-runnable | relative project path; generated/raw data separated |
 | outputs/charts/09_campaign_funnel.png | visual evidence | capstone deliverable or QA evidence | present | non-runnable | relative project path; generated/raw data separated |
 | outputs/charts/10_campaign_prepost.png | visual evidence | capstone deliverable or QA evidence | present | non-runnable | relative project path; generated/raw data separated |
+| outputs/charts/11_model_coefficients.png | visual evidence | capstone deliverable or QA evidence | present | non-runnable | relative project path; generated/raw data separated |
+| outputs/charts/12_experiment_mde.png | visual evidence | capstone deliverable or QA evidence | present | non-runnable | relative project path; generated/raw data separated |
 | outputs/tables/feature_ready_households.csv | generated marts | capstone deliverable or QA evidence | present | non-runnable | relative project path; generated/raw data separated |
 | outputs/tables/kpi_summary.csv | generated marts | capstone deliverable or QA evidence | present | non-runnable | relative project path; generated/raw data separated |
 | outputs/tables/mart_baskets.csv | generated marts | capstone deliverable or QA evidence | present | non-runnable | relative project path; generated/raw data separated |
@@ -52,10 +55,13 @@ Generated at: 2026-08-01 23:51:37 +0530
 | sql/02_build_marts.sql | SQL analytics layer | capstone deliverable or QA evidence | present | runnable | relative project path; generated/raw data separated |
 | sql/03_kpi_outputs.sql | SQL analytics layer | capstone deliverable or QA evidence | present | runnable | relative project path; generated/raw data separated |
 | sql/04_validation_checks.sql | SQL analytics layer | capstone deliverable or QA evidence | present | runnable | relative project path; generated/raw data separated |
+| src/__pycache__/enrich_outputs.cpython-312.pyc | deliverable/supporting file | capstone deliverable or QA evidence | present | non-runnable | relative project path; generated/raw data separated |
 | src/__pycache__/run_pipeline.cpython-312.pyc | deliverable/supporting file | capstone deliverable or QA evidence | present | non-runnable | relative project path; generated/raw data separated |
 | src/download_data.py | deliverable/supporting file | capstone deliverable or QA evidence | present | runnable | relative project path; generated/raw data separated |
+| src/enrich_outputs.py | deliverable/supporting file | capstone deliverable or QA evidence | present | runnable | relative project path; generated/raw data separated |
 | src/run_pipeline.py | pipeline orchestration | capstone deliverable or QA evidence | present | runnable | relative project path; generated/raw data separated |
 | tests/__pycache__/test_capstone_outputs.cpython-312-pytest-8.3.4.pyc | automated tests | capstone deliverable or QA evidence | present | non-runnable | relative project path; generated/raw data separated |
 | tests/__pycache__/test_capstone_outputs.cpython-312.pyc | automated tests | capstone deliverable or QA evidence | present | non-runnable | relative project path; generated/raw data separated |
 | tests/test_capstone_outputs.py | automated tests | capstone deliverable or QA evidence | present | runnable | relative project path; generated/raw data separated |
 | validation_report.md | deliverable/supporting file | capstone deliverable or QA evidence | present | non-runnable | relative project path; generated/raw data separated |
+| visual_evidence_interpretations.md | deliverable/supporting file | capstone deliverable or QA evidence | present | non-runnable | relative project path; generated/raw data separated |
