@@ -13,6 +13,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.preprocessing import StandardScaler
+from audit_enhancements import apply_sql_enhancements, enhance_statistics, repair_feature_frame, write_enhanced_outputs
 
 ROOT = Path(__file__).resolve().parents[1]
 RAW = ROOT / "data" / "raw"
@@ -216,12 +217,12 @@ def build_features(con):
            h.*
     FROM base b LEFT JOIN fut f USING(household_key) LEFT JOIN camp c USING(household_key) LEFT JOIN stg_households h USING(household_key)
     """)
-    df["missing_demographic_flag"] = df.filter(regex="AGE|MARITAL|INCOME|HOME|KID|HOUSEHOLD").isna().all(axis=1).astype(int)
+    df = repair_feature_frame(df)
     con.register("features_df", df); con.execute("CREATE OR REPLACE TABLE mart_customer_features AS SELECT * FROM features_df")
     return df
 
 def export_tables(con):
-    tables=["mart_baskets","mart_household_period","mart_products","mart_categories","mart_campaigns","mart_coupon_redemptions","mart_customer_features","kpi_summary","validation_checks"]
+    tables=["mart_baskets","mart_household_period","mart_products","mart_categories","mart_campaigns","mart_coupon_redemptions","mart_customer_features","mart_promotion_performance","mart_category_period","mart_category_diagnostics","customer_period_summary","customer_retention_matrix","campaign_bias_comparison","campaign_segment_analysis","kpi_summary","validation_checks"]
     counts={}
     for t in tables:
         df=q(con,f"SELECT * FROM {t}"); counts[t]=len(df); df.to_csv(TABLES/f"{t}.csv",index=False)
@@ -240,9 +241,9 @@ def make_charts(con):
     baskets=q(con,"SELECT * FROM mart_baskets"); hp=q(con,"SELECT * FROM mart_household_period"); cats=q(con,"SELECT * FROM mart_categories WHERE household_count>=50 ORDER BY category_sales DESC LIMIT 40"); camps=q(con,"SELECT * FROM mart_campaigns")
     q(con,"SELECT week_no,COUNT(DISTINCT basket_id) baskets FROM stg_transactions GROUP BY 1 ORDER BY 1").plot(x="week_no",y="baskets",legend=False,title="Data coverage: baskets by week"); save("01_data_coverage.png")
     sns.histplot(baskets.basket_spend.clip(upper=baskets.basket_spend.quantile(.99)),bins=50); plt.title("Basket spend distribution"); save("02_basket_spend_distribution.png")
-    sns.histplot(hp.basket_count,bins=40); plt.title("Household basket frequency"); save("03_frequency_distribution.png")
+    sns.histplot(hp.loc[hp.active_flag==1,"basket_count"],bins=40); plt.title("Active-household basket frequency"); plt.xlabel("baskets per four-week period"); save("03_frequency_distribution.png")
     hh=q(con,"SELECT household_key,SUM(basket_spend) spend FROM mart_baskets GROUP BY 1 ORDER BY spend DESC"); hh["cum"]=hh.spend.cumsum()/hh.spend.sum(); plt.plot(np.arange(1,len(hh)+1)/len(hh),hh.cum); plt.title("Customer value concentration"); save("04_value_concentration.png")
-    sns.heatmap(hp.pivot_table(index="period_id",values="retention_repeat_flag",aggfunc="mean").T,cmap="Blues"); plt.title("Repeat activity by period"); save("05_retention_heatmap.png")
+    retention=q(con,"SELECT cohort_period,period_id,retention_rate FROM customer_retention_matrix"); matrix=retention.pivot(index="cohort_period",columns="period_id",values="retention_rate"); sns.heatmap(matrix,cmap="Blues",vmin=0,vmax=1); plt.title("Household cohort retention by four-week period"); plt.xlabel("period"); plt.ylabel("first active period"); save("05_retention_heatmap.png")
     cats.head(15).plot.barh(x="commodity_desc",y="category_sales",legend=False,title="Top category sales"); save("06_top_categories.png")
     sns.scatterplot(data=cats,x="household_penetration",y="category_sales",hue="sales_growth",size="discount_rate",legend=False); plt.title("Category penetration vs sales"); save("07_category_penetration_sales.png")
     sns.regplot(data=cats,x="discount_rate",y="category_sales",scatter_kws={"s":20}); plt.title("Discount rate vs category sales"); save("08_discount_sales.png")
@@ -254,9 +255,7 @@ def analyze(con, features):
     baskets=q(con,"SELECT * FROM mart_baskets"); hp=q(con,"SELECT * FROM mart_household_period"); cats=q(con,"SELECT * FROM mart_categories")
     first=hp[hp.period_id<=hp.period_id.median()].total_spend; second=hp[hp.period_id>hp.period_id.median()].total_spend; tt=stats.ttest_ind(first,second,equal_var=False,nan_policy="omit")
     hd=cats[cats.discount_rate>=cats.discount_rate.median()].category_sales.dropna(); ld=cats[cats.discount_rate<cats.discount_rate.median()].category_sales.dropna(); mw=stats.mannwhitneyu(hd,ld,alternative="two-sided")
-    num=features.select_dtypes(include=[np.number]).drop(columns=["household_key","future_spend","next_period_active_flag","next_period_spend_decline_flag"],errors="ignore"); y=features.next_period_active_flag.astype(int); auc=None; coefs=[]
-    if y.nunique()>1 and len(num.columns)>0:
-        x=pd.DataFrame(SimpleImputer(strategy="median").fit_transform(num),columns=num.columns); xs=StandardScaler().fit_transform(x); m=LogisticRegression(max_iter=1000,class_weight="balanced").fit(xs,y); auc=round(float(roc_auc_score(y,m.predict_proba(xs)[:,1])),3); coefs=sorted(zip(x.columns,m.coef_[0]),key=lambda z:abs(z[1]),reverse=True)[:10]
+    auc=None; coefs=[]  # Leakage-safe holdout model is fitted in enhance_statistics().
     mat=q(con,"SELECT household_key,commodity_desc,SUM(sales_value) spend FROM stg_transactions t LEFT JOIN stg_products p USING(product_id) GROUP BY 1,2").pivot(index="household_key",columns="commodity_desc",values="spend").fillna(0)
     sample=mat.head(min(200,len(mat))); pca=PCA(n_components=min(5,sample.shape[1],sample.shape[0])).fit(StandardScaler(with_mean=False).fit_transform(sample)); sim=cosine_similarity(StandardScaler(with_mean=False).fit_transform(sample))
     return {"avg_basket_ci":ci_mean(baskets.basket_spend),"hh_spend_ci":ci_mean(q(con,"SELECT household_key,SUM(basket_spend) spend FROM mart_baskets GROUP BY 1").spend),"ttest_stat":round(float(tt.statistic),3),"ttest_p":round(float(tt.pvalue),4),"disc_test_stat":round(float(mw.statistic),3),"disc_test_p":round(float(mw.pvalue),4),"model_auc":auc,"top_model_coefs":[(a,round(float(b),3)) for a,b in coefs],"matrix_sparsity":round(float((mat.to_numpy()==0).mean()),3),"pca_variance":pca.explained_variance_ratio_.round(3).tolist(),"nearest_neighbor_similarity":round(float(np.sort(sim[0])[-2]),3) if len(sample)>1 else None}
@@ -276,7 +275,8 @@ def main():
     ensure_dirs(); maybe_download(); write_sql_files(); con=duckdb.connect(str(DB)); present=load_raw(con)
     missing=[k for k,v in present.items() if v is None and k!="causal_data"]
     if missing: raise SystemExit(f"Missing required raw files: {missing}")
-    run_sql(con); features=build_features(con); counts=export_tables(con); charts=make_charts(con); st=analyze(con,features); write_docs(con,present,counts,charts,st); from enrich_outputs import enrich_outputs; charts = enrich_outputs(ROOT, con, charts, st)
+    run_sql(con); apply_sql_enhancements(ROOT, con); features=build_features(con); counts=export_tables(con); charts=make_charts(con); st=enhance_statistics(con,features,analyze(con,features)); write_docs(con,present,counts,charts,st); from enrich_outputs import enrich_outputs; charts = enrich_outputs(ROOT, con, charts, st)
+    write_enhanced_outputs(ROOT, con, charts, st)
     print("Pipeline complete. Outputs and deliverables generated.")
 if __name__=="__main__": main()
 

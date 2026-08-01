@@ -1,0 +1,13 @@
+campaign_type,segment,household_campaign_exposures,redeemed_exposures,redemption_rate
+TypeA,at_risk_lapsed,61,2,0.03278688524590164
+TypeA,high_value,1942,467,0.24047373841400618
+TypeA,low_value,62,1,0.016129032258064516
+TypeA,mid_value,1914,165,0.08620689655172414
+TypeB,at_risk_lapsed,31,5,0.16129032258064516
+TypeB,high_value,1868,172,0.09207708779443255
+TypeB,low_value,16,1,0.0625
+TypeB,mid_value,740,32,0.043243243243243246
+TypeC,at_risk_lapsed,4,0,0.0
+TypeC,high_value,446,38,0.08520179372197309
+TypeC,low_value,1,0,0.0
+TypeC,mid_value,123,6,0.04878048780487805

@@ -1,28 +1,31 @@
-# Campaign Bias-Aware Analysis
+# Campaign, Coupon, And Promotion Analysis
 
-## Campaign Funnel
+## Validated Funnel
 
-| campaign | campaign_type | exposed_households | redeeming_households | household_redemption_rate |
-| --- | --- | --- | --- | --- |
-| 18 | TypeA | 1133 | 214 | 0.18887908208296558 |
-| 13 | TypeA | 1077 | 196 | 0.18198700092850512 |
-| 8 | TypeA | 1076 | 158 | 0.14684014869888476 |
-| 30 | TypeA | 361 | 36 | 0.0997229916897507 |
-| 26 | TypeA | 332 | 31 | 0.09337349397590361 |
-| 22 | TypeB | 276 | 17 | 0.06159420289855073 |
-| 20 | TypeC | 244 | 20 | 0.08196721311475409 |
-| 14 | TypeC | 224 | 18 | 0.08035714285714286 |
-| 11 | TypeB | 214 | 6 | 0.028037383177570093 |
-| 17 | TypeB | 202 | 18 | 0.0891089108910891 |
+| campaign | campaign_type | exposed_households | redeeming_households | redemption_count | household_redemption_rate |
+| --- | --- | --- | --- | --- | --- |
+| 18 | TypeA | 1133 | 214 | 653 | 0.1889 |
+| 13 | TypeA | 1077 | 196 | 629 | 0.182 |
+| 8 | TypeA | 1076 | 158 | 372 | 0.1468 |
+| 30 | TypeA | 361 | 36 | 64 | 0.0997 |
+| 26 | TypeA | 332 | 31 | 73 | 0.0934 |
+| 22 | TypeB | 276 | 17 | 47 | 0.0616 |
+| 20 | TypeC | 244 | 20 | 33 | 0.082 |
+| 14 | TypeC | 224 | 18 | 34 | 0.0804 |
+| 11 | TypeB | 214 | 6 | 8 | 0.028 |
+| 17 | TypeB | 202 | 18 | 45 | 0.0891 |
 
-## Pre/Post Association by Campaign Type
+Rates divide distinct redeeming households by distinct exposed households. TypeA is separate because targeting creates stronger selection. TypeB and TypeC remain non-random. Exposure is not proof of viewing, and sparse redemption requires denominators.
 
-| campaign_type | households | avg_pre_spend | avg_post_spend | avg_change |
-| --- | --- | --- | --- | --- |
-| TypeA | 1513 | 587.95 | 1638.15 | 1050.2 |
-| TypeB | 1023 | 825.46 | 1813.46 | 988.0 |
-| TypeC | 397 | 474.25 | 1589.49 | 1115.24 |
+## Bias-Aware Comparison
 
-Campaign exposure is not proof that a household saw or understood a campaign. Redemption is sparse and mechanically different from exposure. TypeA campaigns are targeted, so exposed households are likely selected based on prior behavior; TypeB and TypeC are still observational and may reflect participation or eligibility differences.
+campaign_bias_comparison.csv uses equal 28-day pre and post windows and stratifies by campaign type, prior-spend quartile, and redemption status. campaign_segment_analysis.csv reports redemption by customer segment. These controls do not remove self-selection, regression to the mean, unobserved eligibility, inventory, or concurrent activity. Results are associations, not causal lift.
 
-The pre/post comparison uses a 28-day baseline before campaign start and campaign plus 28-day follow-up. It is a bias-aware descriptive design, not a causal estimate. The result should be phrased as association or lift hypothesis. The recommended next step is a randomized household-level test among high-value declining households.
+## Promotion Evidence
+
+| promotion_status | product_store_weeks | transaction_lines | sales | units | basket_occurrences | avg_sales_per_product_store_week |
+| --- | --- | --- | --- | --- | --- | --- |
+| not_promoted | 1887464 | 2031958.0 | 6499712.25 | 259891029.0 | 2031958.0 | 3.4436 |
+| promoted | 483320 | 563774.0 | 1557750.83 | 794593.0 | 563774.0 | 3.223 |
+
+Causal data is deduplicated to product-store-week before joining transactions aggregated at exactly that grain. Product, store, timing, and merchandising selection confound the promoted comparison. Row, sales, and unit reconciliation is recorded in validation_checks.csv.

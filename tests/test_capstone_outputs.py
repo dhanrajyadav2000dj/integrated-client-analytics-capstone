@@ -1,4 +1,5 @@
 from pathlib import Path
+import subprocess
 import duckdb
 import pandas as pd
 
@@ -75,7 +76,7 @@ def test_required_mart_columns_and_rate_ranges():
     }
     assert required.issubset(set(baskets.columns))
     assert baskets["coupon_used_flag"].dropna().isin([0, 1]).all()
-    assert baskets["discount_rate"].dropna().between(0, 10).all()
+    assert baskets["discount_rate"].dropna().between(0, 1).all()
 
     campaigns = pd.read_csv(TABLES / "mart_campaigns.csv")
     assert campaigns["household_redemption_rate"].dropna().between(0, 1).all()
@@ -123,17 +124,15 @@ def test_feature_temporal_labels_and_leakage_columns():
 
 def test_no_committed_secret_patterns_in_project_files():
     secret_markers = ["KG" + "AT_", "KAGGLE" + "_API_TOKEN="]
-    allowed = {"qa/QA_BASELINE_STATE.md"}
-    for path in ROOT.rglob("*"):
-        rel = path.relative_to(ROOT).as_posix()
-        if not path.is_file() or ".git" in path.parts or rel.startswith("data/raw/") or rel in allowed:
-            continue
-        if path.suffix.lower() in {".png", ".duckdb", ".zip", ".pyc"}:
+    tracked = subprocess.check_output(
+        ["git", "ls-files", "--cached", "--others", "--exclude-standard"], cwd=ROOT, text=True
+    ).splitlines()
+    for rel in tracked:
+        path = ROOT / rel
+        if not path.is_file() or path.suffix.lower() in {".png", ".duckdb", ".zip", ".pyc"}:
             continue
         text = path.read_text(errors="ignore")
         assert not any(marker in text for marker in secret_markers), f"Secret-like marker found in {rel}"
-
-
 
 
 def test_enriched_reviewer_documents_exist():
@@ -143,3 +142,146 @@ def test_enriched_reviewer_documents_exist():
         assert path.stat().st_size > 500
     assert (CHARTS / "11_model_coefficients.png").exists()
     assert (CHARTS / "12_experiment_mde.png").exists()
+
+
+def test_household_period_complete_spine_and_adjacent_retention():
+    periods = pd.read_csv(TABLES / "mart_household_period.csv")
+    assert periods[["household_key", "period_id"]].duplicated().sum() == 0
+    assert len(periods) == periods["household_key"].nunique() * periods["period_id"].nunique()
+    assert periods.loc[periods["period_id"] == 1, "prior_period_spend"].isna().all()
+    ordered = periods.sort_values(["household_key", "period_id"]).copy()
+    expected = (
+        (ordered["active_flag"] == 1)
+        & (ordered.groupby("household_key")["active_flag"].shift(1) == 1)
+    ).astype(int)
+    assert (ordered["retention_repeat_flag"].astype(int) == expected).all()
+    assert ordered.groupby("household_key")["incomplete_period_flag"].sum().eq(1).all()
+
+
+def test_financial_discount_convention_and_gross_sales():
+    baskets = pd.read_csv(TABLES / "mart_baskets.csv")
+    discounts = (
+        baskets["total_retail_discount"]
+        + baskets["total_coupon_discount"]
+        + baskets["total_coupon_match_discount"]
+    )
+    assert (discounts >= 0).all()
+    assert ((baskets["basket_spend"] + discounts - baskets["gross_sales"]).abs() < 0.01).all()
+    expected_rate = discounts / baskets["gross_sales"].where(baskets["gross_sales"] > 0)
+    delta = (expected_rate - baskets["discount_rate"]).dropna().abs()
+    assert (delta < 1e-10).all()
+
+
+def test_promotion_join_reconciles_exact_grain():
+    checks = pd.read_csv(TABLES / "validation_checks.csv")
+    values = dict(zip(checks["check_name"], checks["check_value"].astype(str).str.lower()))
+    for name in [
+        "promotion_join_fanout_ok",
+        "promotion_join_sales_reconciled",
+        "promotion_join_units_reconciled",
+    ]:
+        assert values[name] == "true"
+    assert int(values["transaction_product_store_week_rows"]) == int(values["promotion_join_rows"])
+    assert int(values["causal_source_rows"]) >= int(values["causal_exact_key_rows"])
+    promotion = pd.read_csv(TABLES / "mart_promotion_performance.csv")
+    assert set(promotion["promotion_status"]) == {"promoted", "not_promoted"}
+    assert promotion["product_store_weeks"].sum() == int(values["promotion_join_rows"])
+
+
+def test_product_category_keys_rates_and_diagnostics():
+    products = pd.read_csv(TABLES / "mart_products.csv")
+    categories = pd.read_csv(TABLES / "mart_categories.csv")
+    diagnostics = pd.read_csv(TABLES / "mart_category_diagnostics.csv")
+    assert products["product_id"].is_unique
+    assert not categories[["department", "commodity_desc"]].duplicated().any()
+    assert categories["household_penetration"].between(0, 1).all()
+    assert categories["basket_penetration"].between(0, 1).all()
+    assert categories["discount_rate"].dropna().between(0, 1).all()
+    required = {
+        "sales_coefficient_of_variation", "household_engagement_change",
+        "small_group_flag", "high_sales_declining_flag",
+        "high_penetration_low_spend_flag",
+    }
+    assert required.issubset(diagnostics.columns)
+
+
+def test_campaign_bias_and_segment_evidence_has_denominators():
+    comparison = pd.read_csv(TABLES / "campaign_bias_comparison.csv")
+    segment = pd.read_csv(TABLES / "campaign_segment_analysis.csv")
+    assert set(comparison["campaign_type"]) == {"TypeA", "TypeB", "TypeC"}
+    assert set(comparison["prior_value_quartile"]) == {1, 2, 3, 4}
+    assert set(comparison["redeemed_flag"]) == {0, 1}
+    assert (comparison["household_campaign_exposures"] > 0).all()
+    assert segment["redemption_rate"].between(0, 1).all()
+    assert (segment["household_campaign_exposures"] >= segment["redeemed_exposures"]).all()
+
+
+def test_customer_period_and_cohort_denominators():
+    summary = pd.read_csv(TABLES / "customer_period_summary.csv")
+    matrix = pd.read_csv(TABLES / "customer_retention_matrix.csv")
+    assert summary["period_id"].is_unique
+    assert (summary["retained_households"] <= summary["prior_active_households"]).all()
+    assert summary["retention_rate"].dropna().between(0, 1).all()
+    assert matrix["retention_rate"].between(0, 1).all()
+    assert (matrix["active_households"] <= matrix["cohort_households"]).all()
+
+
+def test_feature_demographic_flag_and_numeric_finiteness():
+    import numpy as np
+
+    features = pd.read_csv(TABLES / "feature_ready_households.csv")
+    assert "household_key_1" not in features.columns
+    assert set(features["missing_demographic_flag"]) == {0, 1}
+    assert features.loc[features["missing_demographic_flag"] == 0, "age_desc"].notna().any()
+    numeric = features.select_dtypes(include="number")
+    assert np.isfinite(numeric.drop(columns=["future_spend"], errors="ignore").fillna(0).to_numpy()).all()
+
+
+def test_sql_is_modular_idempotent_and_contains_exact_join_controls():
+    sql_files = sorted((ROOT / "sql").glob("*.sql"))
+    assert [path.name for path in sql_files[:4]] == [
+        "01_stage_sources.sql", "02_build_marts.sql",
+        "03_kpi_outputs.sql", "04_validation_checks.sql",
+    ]
+    combined = "\n".join(path.read_text(errors="ignore") for path in sql_files)
+    assert "CREATE OR REPLACE TABLE" in combined
+    assert "product_id, store_id, week_no" in combined
+    assert "promotion_join_fanout_ok" in combined
+    assert "LAG(active_flag)" in combined
+
+
+def test_relative_time_and_hhmm_validation():
+    con = duckdb.connect()
+    source = (RAW / "transaction_data.csv").as_posix()
+    result = con.execute(f"""
+        SELECT MIN(DAY),MAX(DAY),MIN(WEEK_NO),MAX(WEEK_NO),
+               COUNT(*) FILTER(
+                 WHERE TRY_CAST(TRANS_TIME AS INTEGER) NOT BETWEEN 0 AND 2359
+                    OR TRY_CAST(TRANS_TIME AS INTEGER) % 100 >= 60
+               )
+        FROM read_csv_auto('{source}')
+    """).fetchone()
+    assert result[:4] == (1, 711, 1, 102)
+    assert result[4] == 0
+
+
+def test_quantitative_model_and_documentation_evidence():
+    appendix = (ROOT / "quantitative_analysis_appendix.md").read_text()
+    assert "Cohen's d=" in appendix
+    assert "rank-biserial effect=" in appendix
+    assert "training and" in appendix and "holdout households" in appendix
+    assert "PCA components explain" in appendix
+    for rel in [
+        "customer_analysis.md", "category_analysis.md", "campaign_bias_analysis.md",
+        "docs/source_relationship_map.md", "docs/mart_catalog.md",
+    ]:
+        assert (ROOT / rel).exists()
+        assert (ROOT / rel).stat().st_size > 300
+
+
+def test_required_numbered_qa_artifacts_will_be_generated():
+    generator = ROOT / "qa" / "strict_audit.py"
+    assert generator.exists()
+    text = generator.read_text(errors="ignore")
+    for number in range(1, 8):
+        assert f"0{number}_" in text

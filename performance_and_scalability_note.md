@@ -1,3 +1,5 @@
-# Performance and Scalability Note
+# Performance And Scalability Note
 
-Counts: `{"mart_baskets": 276484, "mart_household_period": 48303, "mart_products": 92339, "mart_categories": 360, "mart_campaigns": 30, "mart_coupon_redemptions": 2318, "mart_customer_features": 2499, "kpi_summary": 1, "validation_checks": 11}`. Heavy joins are pushed into DuckDB. Transactions are summarized to basket, household-period, product, and category grain before analysis. Coupon and campaign bridges are not directly joined to item facts for rate reporting. `causal_data` is staged and should be joined only to product-store-week transaction summaries with before/after row-count checks. Production improvements: partition by week, cluster on household/product/store, materialize marts, and isolate promotion bridge tables.
+The largest source is causal_data with 36,786,524 rows; transactions have 2,595,732 item lines. DuckDB handles heavy staging and aggregation. Transactions reduce to product-store-week before promotion joins, and duplicate causal keys collapse at the same grain. Row, sales, and unit controls prevent fan-out.
+
+Production should partition by week, cluster by product-store-week and household-week, materialize staging, refresh incrementally, enforce bridge uniqueness, and monitor workloads. Do not load full causal data into pandas or join coupons directly to item rows.

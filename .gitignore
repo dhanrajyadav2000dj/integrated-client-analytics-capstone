@@ -222,3 +222,10 @@ data/raw/
 data/processed/
 src/__pycache__/
 
+
+# Editor and operating-system files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.tmp

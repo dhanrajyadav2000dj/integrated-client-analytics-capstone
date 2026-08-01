@@ -1,41 +1,50 @@
 # Quantitative Analysis Appendix
 
-## Descriptive Statistics
+## Distribution And Probability Evidence
 
-| avg_basket_spend | median_basket_spend | sd_basket_spend | avg_basket_units | median_basket_units | avg_discount_rate | median_discount_rate |
+Basket spend and units are right-skewed. Extreme source quantities make medians important alongside means.
+
+| mean_basket_spend | median_basket_spend | sd_basket_spend | mean_basket_units | median_basket_units | mean_discount_rate | median_discount_rate |
 | --- | --- | --- | --- | --- | --- | --- |
-| 29.14 | 17.07 | 36.1 | 942.86 | 8.0 | 0.1357 | 0.1138 |
+| 29.1426 | 17.07 | 36.1013 | 942.8597 | 8.0 | 0.1346 | 0.1136 |
 
-Basket spend, basket units, discount rates, and coupon behavior are right-skewed. This motivates medians, denominator checks, and bootstrap confidence intervals alongside parametric tests.
+Empirical event probabilities use distinct baskets or prior-active household-periods as documented denominators:
 
-## Business Event Probabilities
-
-| p_coupon_basket | p_basket_over_50 | p_repeat_period |
+| coupon_basket_probability | basket_over_50_probability | adjacent_retention_probability |
 | --- | --- | --- |
-| 0.0617 | 0.1661 | 0.0074 |
+| 0.0606 | 0.1661 | 0.886 |
 
-These probabilities are empirical rates from the observed sample, not population guarantees.
+- Average basket spend bootstrap 95% CI: (np.float64(28.997), np.float64(29.277))
+- Household total spend bootstrap 95% CI: (np.float64(3102.6), np.float64(3350.263))
+- Spearman correlations: {'basket_spend': {'basket_spend': 1.0, 'basket_units': 0.8148, 'discount_rate': 0.1274}, 'basket_units': {'basket_spend': 0.8148, 'basket_units': 1.0, 'discount_rate': 0.1426}, 'discount_rate': {'basket_spend': 0.1274, 'basket_units': 0.1426, 'discount_rate': 1.0}}
+- Covariance matrix: {'basket_spend': {'basket_spend': 1303.3039, 'basket_units': 3071.8982, 'discount_rate': 0.1846}, 'basket_units': {'basket_spend': 3071.8982, 'basket_units': 11699286.6465, 'discount_rate': -94.6533}, 'discount_rate': {'basket_spend': 0.1846, 'basket_units': -94.6533, 'discount_rate': 0.0145}}
 
-## Confidence Intervals
+Correlation is not causation. Extreme quantities, customer value, product mix, and promotion exposure can confound relationships.
 
-- Average basket spend bootstrap 95% CI: (29.007, 29.275)
-- Household total spend bootstrap 95% CI: (3102.6, 3350.263)
+## Hypothesis Tests And Effect Sizes
 
-## Hypothesis Tests
+1. H0: mean household-period spend is equal in early and late constructed periods. H1: means differ. Welch t=-19.228, p=0.0, Cohen's d=0.1508.
+2. H0: eligible high- and low-discount category sales come from equal distributions. H1: distributions differ. Mann-Whitney U=24599.0, p=0.0, rank-biserial effect=0.4786.
 
-1. Early versus late household-period spend. Null: mean spend is equal. Alternative: mean spend differs. Welch t-statistic -6.157, p-value 0.0. The large sample makes small differences detectable, so business materiality should be evaluated with absolute spend change and margin.
-2. High-discount versus low-discount category sales. Null: category sales distributions are equal. Alternative: distributions differ. Mann-Whitney statistic 24631.0, p-value 0.0. This is association only; promotion intensity, category role, and product mix can confound the comparison.
+Large samples can make small effects significant. Decisions require a business threshold after discount cost. Multiple comparisons raise false-positive risk.
 
-Multiple category and segment comparisons increase false-positive risk. Findings should be used to prioritize investigation, not to make automatic assortment decisions.
+## Matrix, Similarity, And PCA
 
-## Matrix, Similarity, and PCA
+The customer-category matrix has 2500 household rows and 308 category columns, sparsity 0.6282, and standardized inputs. Five PCA components explain [0.1652, 0.0319, 0.0262, 0.0168, 0.015] individually and 0.2551 cumulatively. This information loss makes PCA diagnostic only. Sampled nearest households [21, 90] have cosine similarity 0.8449; sparse purchasing can inflate similarity.
 
-Customer-category matrix sparsity: 0.628. Nearest-neighbor cosine similarity example: 0.423. PCA explained variance: [0.165, 0.04, 0.033, 0.029, 0.025]. Sparse purchase matrices can overstate similarity for narrow category buyers, so nearest neighbors should be interpreted as affinity hypotheses.
+## Leakage-Safe Baseline Model
 
-## Baseline Model
+Logistic regression predicts final-13-week activity from earlier features. A deterministic stratified split has 1874 training and 625 holdout households. Imputation, rare and unknown-safe encoding, scaling, and fitting use training households only. Future-period holdout AUC is 0.91 across 62 columns. Top coefficients: [('categorical__age_desc_65+', -2.214), ('categorical__income_desc_125-149K', -1.885), ('categorical__age_desc_45-54', 1.757), ('categorical__age_desc_19-24', -1.493), ('categorical__homeowner_desc_Unknown', -1.412), ('categorical__hh_comp_desc_2 Adults Kids', 1.298), ('categorical__age_desc_25-34', 1.282), ('categorical__income_desc_75-99K', -1.172), ('categorical__hh_comp_desc_2 Adults No Kids', -1.158), ('numeric__spend_trend_change', 1.084)]. AUC is not calibration or causal impact.
 
-Temporal baseline model AUC for next-period active flag: 0.874. Top standardized coefficients: [('spend_trend_change', 1.012), ('frequency_baskets', 0.827), ('recency_weeks', -0.666), ('category_diversity', 0.518), ('second_half_spend', 0.462), ('total_units', -0.451), ('top_department_share', 0.213), ('avg_line_sales', 0.205), ('monetary_spend', 0.205), ('first_half_spend', -0.169)]. Logistic regression uses a logit link for a binary outcome and is included for interpretable screening. Future labels and future spend are excluded from features. Calibration and temporal holdout monitoring are required before production use.
+## Experiment Power
 
-## Power / MDE
+Baseline four-week spend mean=126.417 and SD=172.027. Two-sided alpha=0.05, power=0.80, equal allocation, and a normal approximation produce:
 
-The MDE chart uses a two-sample household-randomized normal approximation with alpha 0.05 and power 0.80. The recommended experiment should recompute sample size using current eligible-household variance and minimum business-relevant lift. Statistical significance is not the same as business significance.
+| households_per_arm | mde_spend | mde_percent |
+| --- | --- | --- |
+| 250.0 | 43.08 | 34.08 |
+| 500.0 | 30.46 | 24.1 |
+| 1000.0 | 21.54 | 17.04 |
+| 1500.0 | 17.59 | 13.91 |
+
+Success requires a pre-registered net-value threshold.

@@ -1,7 +1,8 @@
 # Issue Register
 
-Generated at: 2026-08-02 00:07:30 +0530
-
-| Issue ID | Severity | Requirement | File | Line/section | Problem | Evidence | Risk | Required fix | Retest method | Status |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| QA-003 | LOW | Campaign causal evidence | campaign_bias_analysis.md | campaign section | Campaign analysis is pre/post observational rather than randomized or matched causal evidence | Dedicated campaign bias file uses association wording and selection-bias caveats | Reviewer may prefer deeper matching/DiD but assignment caution is satisfied | Keep caveat; future work may add matching or regression adjustment | Run pytest and python src/run_pipeline.py; inspect QA reports | OPEN |
+| Issue ID | Severity | Test ID | Requirement | File | Line/section | Problem | Evidence | Business/technical risk | Required fix | Retest method | Status |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| QA-001 | HIGH | HHP-011/LKG-004 | Adjacent retention and training-only preprocessing | src/run_pipeline.py | mart and analyze workflow | Original retention skipped inactive gaps and original AUC was in-sample. | 65,000-row spine and holdout AUC documentation | Inflated retention/model quality | Complete period spine and fit preprocessing/model on training households | pytest and full pipeline | FIXED |
+| QA-002 | MEDIUM | CMP-012/CMP-013 | Campaign and promotion inference | campaign_bias_analysis.md | Bias-aware comparison | Evidence remains observational rather than randomized. | Equal windows, prior-value strata, exact promotion grain, explicit caveats | Residual confounding | Future household-randomized experiment with eligibility and cost data | Review experimental results | OPEN |
+| QA-003 | LOW | CAT-003/CAT-010 | Category growth comparison | category_analysis.md | Growth | Weeks 53-102 are shorter than weeks 1-52. | Limitation disclosed and stability diagnostics provided | Raw growth is not annualized | Use equal-length windows in future refresh | Recalculate equal-window growth | OPEN |
+| QA-004 | HIGH | DSC-007/FTR-015 | Financial and demographic correctness | src/audit_enhancements.py; sql/05_strengthen_analytics_and_validation.sql | discount and feature repairs | Original denominator omitted coupon discounts and demographic flag was always one. | Gross equals net plus all discounts; coverage now 801/1698 | Incorrect rates and feature semantics | Correct formulas and lowercase demographic detection | pytest full reconciliation | FIXED |

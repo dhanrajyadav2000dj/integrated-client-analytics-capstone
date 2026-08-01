@@ -1,0 +1,3 @@
+promotion_status,product_store_weeks,transaction_lines,sales,units,basket_occurrences,avg_sales_per_product_store_week
+not_promoted,1887464,2031958.0,6499712.249997348,259891029.0,2031958.0,3.4436218386137947
+promoted,483320,563774.0,1557750.830000033,794593.0,563774.0,3.2230216626666244

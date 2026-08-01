@@ -1,51 +1,40 @@
-# QA Test Report
+# Test Execution Report
 
-Generated at: 2026-08-02 00:07:59 +05:30
+Execution date: 2026-08-02 01:21:58 +0530
 
 ## Environment
 
-- OS shell: PowerShell on Windows
-- Python command: python
-- SQL engine: DuckDB
-- Dataset location: data/raw/
+- OS: Windows-11-10.0.26200-SP0
+- Python: 3.12.6
+- SQL engine: DuckDB 1.1.3
+- Dataset: eight local CSV files under data/raw
+- Raw files preserved: YES
 - Canonical pipeline: python src/run_pipeline.py
 
 ## Commands Executed
 
 | Command | Exit code | Runtime | Result | Notes |
-| --- | ---: | ---: | --- | --- |
-| python -m py_compile src/enrich_outputs.py | 0 | <1s | PASS | Enrichment module syntax validated |
-| python -m py_compile src/run_pipeline.py | 0 | <1s | PASS | Pipeline syntax validated |
-| python src/run_pipeline.py | 0 | 64.3s | PASS | SQL, marts, charts, reports, enriched docs regenerated |
-| python -m pytest -q | 0 | 22.40s | PASS | Final automated test suite passed |
-| python qa/generate_qa_reports.py | 0 | 10.7s | PASS | Final QA reports regenerated |
+| --- | --- | --- | --- | --- |
+| python -m py_compile src/run_pipeline.py src/audit_enhancements.py | 0 | <1s | PASS | Syntax |
+| python src/run_pipeline.py (schema-discovery run 1) | 1 | 25.3s | FAIL/FIXED | Optional product columns absent |
+| python src/run_pipeline.py (schema-discovery run 2) | 1 | 24.6s | FAIL/FIXED | Replacement corrected after exact inspection |
+| python src/run_pipeline.py | 0 | 65.5s | PASS | SQL, marts, charts, model, reports |
+| python -m venv .venv | 0 | 22.8s | PASS | Fresh isolated environment |
+| .venv python -m pip install -r requirements.txt | 124 | controller timeout | COMPLETE/VERIFIED | Install completed; pip check and imports passed |
+| .venv python -m pip check | 0 | 1.4s | PASS | No broken requirements |
+| .venv python -m pytest -q | 0 | 14.96s | PASS | 20 deterministic tests |
+| python src/execute_notebook.py | 0 | 79.9s | PASS | Notebook code cells top to bottom |
+| python qa/strict_audit.py | 0 | current run | PASS | Numbered reports |
 
-## Test Totals
+## Results
 
-- Passed: 9
-- Failed: 0
-- Blocked: 0
-- Warnings: 1 open low-severity warning
-- Total: 9
+- Automated tests passed: 20
+- Automated tests failed: 0
+- Audit cases passed: 367
+- Audit cases partial: 16
+- Audit cases blocked: 0
+- Tables generated: 18
+- Charts generated: 12
+- Warnings: observational marketing evidence; unequal 52/50-week growth windows; no production model deployment artifact.
 
-## Automated Test Coverage
-
-- Required source files present and nonempty
-- Required output tables and charts present, including 12 visuals
-- Basket mart grain and source sales/unit reconciliation
-- Required basket/campaign columns and rate ranges
-- Core validation checks pass
-- Coupon bridge and causal-data grain guardrails
-- Feature table temporal label/leakage column checks
-- Secret-pattern scan over project files
-- Enriched campaign/visual interpretation documents exist
-
-## Generated Outputs Verified
-
-- Output tables: 10 CSV files in outputs/tables/
-- Charts: 12 PNG files in outputs/charts/
-- QA reports: required QA files plus repository/source inventory and baseline record
-
-## Evidence
-
-Final pytest result: 9 passed in 22.40s.
+The two failed discovery runs are retained because strict QA records errors. Both were corrected and the full pipeline subsequently exited 0.
