@@ -1,0 +1,12 @@
+check_name,check_value
+transaction_rows,2595732
+distinct_baskets,276484
+mart_basket_rows,276484
+basket_fanout_ok,true
+products_duplicate_keys,0
+transactions_missing_product_metadata,0
+negative_sales_rows,0
+zero_sales_rows,18850
+invalid_trans_time_rows,0
+discount_larger_than_sales_rows,1983
+coupon_product_bridge_distinct_rows,119384

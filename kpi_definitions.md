@@ -1,0 +1,3 @@
+# KPI Definitions
+
+All discount reporting uses positive discount amounts from `ABS(retail_disc)`, `ABS(coupon_disc)`, and `ABS(coupon_match_disc)`. Rates are reported only with explicit denominators. Active household means at least one basket in the window. Basket means distinct `basket_id`, not transaction rows. Retention means repeat activity in adjacent 4-week periods. Coupon redemption rate uses redeeming households divided by exposed households with a minimum denominator threshold of 30. Category penetration uses buying households divided by active households with a minimum threshold of 50 category households. Customer value is household spend; high value is top-quartile observation-window spend; at risk is prior activity with future inactivity or spend decline.

@@ -1,0 +1,3 @@
+# Assumptions and Limitations
+
+`DAY` and `WEEK_NO` are relative indexes, not real dates, so weekday, month, holiday, and calendar seasonality are not recoverable. Periods are constructed as 4-week and 13-week windows. Spend uses `sales_value`; gross sales proxy adds retail discount. Demographics are incomplete. Campaign exposure does not prove attention. Coupon redemption is sparse. TypeA, TypeB, and TypeC mechanics differ. Campaign comparisons are observational and vulnerable to selection bias, confounding, and omitted variables. Feature labels use future windows and future columns are excluded from model features.

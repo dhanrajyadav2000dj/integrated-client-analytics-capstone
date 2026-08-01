@@ -1,0 +1,3 @@
+# Performance and Scalability Note
+
+Counts: `{"mart_baskets": 276484, "mart_household_period": 48303, "mart_products": 92339, "mart_categories": 360, "mart_campaigns": 30, "mart_coupon_redemptions": 2318, "mart_customer_features": 2499, "kpi_summary": 1, "validation_checks": 11}`. Heavy joins are pushed into DuckDB. Transactions are summarized to basket, household-period, product, and category grain before analysis. Coupon and campaign bridges are not directly joined to item facts for rate reporting. `causal_data` is staged and should be joined only to product-store-week transaction summaries with before/after row-count checks. Production improvements: partition by week, cluster on household/product/store, materialize marts, and isolate promotion bridge tables.
