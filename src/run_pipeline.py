@@ -169,11 +169,52 @@ def run_sql(con):
         con.execute((ROOT/"sql"/f).read_text())
 
 def build_features(con):
-    max_week = int(q(con,"SELECT MAX(week_no) m FROM stg_transactions")["m"][0]); obs_end=max_week-13
+    max_week = int(q(con,"SELECT MAX(week_no) m FROM stg_transactions")["m"][0])
+    obs_end = max_week - 13
+    first_half_end = max(1, obs_end // 2)
     df = q(con, f"""
-    WITH obs AS (SELECT * FROM stg_transactions WHERE week_no<={obs_end}), fut AS (SELECT household_key,SUM(sales_value) future_spend,COUNT(DISTINCT basket_id) future_baskets FROM stg_transactions WHERE week_no>{obs_end} GROUP BY 1),
-    base AS (SELECT o.household_key,{obs_end}-MAX(o.week_no) recency_weeks,COUNT(DISTINCT o.basket_id) frequency_baskets,SUM(o.sales_value) monetary_spend,AVG(o.sales_value) avg_line_sales,SUM(o.quantity) total_units,COUNT(DISTINCT o.product_id) product_diversity,COUNT(DISTINCT COALESCE(p.commodity_desc,'UNKNOWN')) category_diversity,SUM(o.retail_discount_amt+o.coupon_discount_amt+o.coupon_match_discount_amt) discount_amount,SUM(CASE WHEN o.coupon_discount_amt+o.coupon_match_discount_amt>0 THEN 1 ELSE 0 END) coupon_line_count FROM obs o LEFT JOIN stg_products p USING(product_id) GROUP BY 1)
-    SELECT b.*, b.discount_amount/NULLIF(b.monetary_spend+b.discount_amount,0) discount_rate, b.coupon_line_count/NULLIF(b.frequency_baskets,0) coupon_engagement, COALESCE(f.future_spend,0) future_spend, CASE WHEN COALESCE(f.future_baskets,0)>0 THEN 1 ELSE 0 END next_period_active_flag, CASE WHEN COALESCE(f.future_spend,0)<b.monetary_spend*13.0/NULLIF({obs_end},0) THEN 1 ELSE 0 END next_period_spend_decline_flag, h.* FROM base b LEFT JOIN fut f USING(household_key) LEFT JOIN stg_households h USING(household_key)
+    WITH obs AS (SELECT * FROM stg_transactions WHERE week_no <= {obs_end}),
+    fut AS (SELECT household_key, SUM(sales_value) AS future_spend, COUNT(DISTINCT basket_id) AS future_baskets FROM stg_transactions WHERE week_no > {obs_end} GROUP BY 1),
+    top_dept AS (
+      SELECT household_key, department FROM (
+        SELECT o.household_key, COALESCE(p.department, 'UNKNOWN') AS department, SUM(o.sales_value) AS dept_spend,
+               ROW_NUMBER() OVER (PARTITION BY o.household_key ORDER BY SUM(o.sales_value) DESC) AS rn
+        FROM obs o LEFT JOIN stg_products p USING(product_id) GROUP BY 1,2
+      ) WHERE rn = 1
+    ),
+    camp AS (
+      SELECT ct.household_key, COUNT(*) AS campaign_exposure_count
+      FROM stg_campaign_table ct JOIN stg_campaign_desc cd USING(campaign)
+      WHERE cd.start_day <= {obs_end * 7}
+      GROUP BY 1
+    ),
+    base AS (
+      SELECT o.household_key,
+             {obs_end} - MAX(o.week_no) AS recency_weeks,
+             COUNT(DISTINCT o.basket_id) AS frequency_baskets,
+             SUM(o.sales_value) AS monetary_spend,
+             AVG(o.sales_value) AS avg_line_sales,
+             SUM(o.quantity) AS total_units,
+             COUNT(DISTINCT o.product_id) AS product_diversity,
+             COUNT(DISTINCT COALESCE(p.commodity_desc,'UNKNOWN')) AS category_diversity,
+             SUM(o.retail_discount_amt+o.coupon_discount_amt+o.coupon_match_discount_amt) AS discount_amount,
+             SUM(CASE WHEN o.coupon_discount_amt+o.coupon_match_discount_amt>0 THEN 1 ELSE 0 END) AS coupon_line_count,
+             SUM(CASE WHEN o.week_no <= {first_half_end} THEN o.sales_value ELSE 0 END) AS first_half_spend,
+             SUM(CASE WHEN o.week_no > {first_half_end} THEN o.sales_value ELSE 0 END) AS second_half_spend,
+             SUM(CASE WHEN COALESCE(p.department,'UNKNOWN') = td.department THEN o.sales_value ELSE 0 END) / NULLIF(SUM(o.sales_value),0) AS top_department_share
+      FROM obs o LEFT JOIN stg_products p USING(product_id) LEFT JOIN top_dept td USING(household_key)
+      GROUP BY 1
+    )
+    SELECT b.*,
+           b.second_half_spend - b.first_half_spend AS spend_trend_change,
+           b.discount_amount/NULLIF(b.monetary_spend+b.discount_amount,0) AS discount_rate,
+           b.coupon_line_count/NULLIF(b.frequency_baskets,0) AS coupon_engagement,
+           COALESCE(c.campaign_exposure_count,0) AS campaign_exposure_count,
+           COALESCE(f.future_spend,0) AS future_spend,
+           CASE WHEN COALESCE(f.future_baskets,0)>0 THEN 1 ELSE 0 END AS next_period_active_flag,
+           CASE WHEN COALESCE(f.future_spend,0)<b.monetary_spend*13.0/NULLIF({obs_end},0) THEN 1 ELSE 0 END AS next_period_spend_decline_flag,
+           h.*
+    FROM base b LEFT JOIN fut f USING(household_key) LEFT JOIN camp c USING(household_key) LEFT JOIN stg_households h USING(household_key)
     """)
     df["missing_demographic_flag"] = df.filter(regex="AGE|MARITAL|INCOME|HOME|KID|HOUSEHOLD").isna().all(axis=1).astype(int)
     con.register("features_df", df); con.execute("CREATE OR REPLACE TABLE mart_customer_features AS SELECT * FROM features_df")
