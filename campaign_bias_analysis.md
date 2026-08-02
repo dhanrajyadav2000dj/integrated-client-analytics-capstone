@@ -25,7 +25,7 @@ campaign_bias_comparison.csv uses equal 28-day pre and post windows and stratifi
 
 | promotion_status | product_store_weeks | transaction_lines | sales | units | basket_occurrences | avg_sales_per_product_store_week |
 | --- | --- | --- | --- | --- | --- | --- |
-| not_promoted | 1887464 | 2031958.0 | 6499712.25 | 259891029.0 | 2031958.0 | 3.4436 |
+| not_promoted | 1887464 | 2031958.0 | 6499712.2501 | 259891029.0 | 2031958.0 | 3.4436 |
 | promoted | 483320 | 563774.0 | 1557750.83 | 794593.0 | 563774.0 | 3.223 |
 
 Causal data is deduplicated to product-store-week before joining transactions aggregated at exactly that grain. Product, store, timing, and merchandising selection confound the promoted comparison. Row, sales, and unit reconciliation is recorded in validation_checks.csv.

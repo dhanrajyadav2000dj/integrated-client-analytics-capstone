@@ -217,7 +217,7 @@ def build_features(con):
            h.*
     FROM base b LEFT JOIN fut f USING(household_key) LEFT JOIN camp c USING(household_key) LEFT JOIN stg_households h USING(household_key)
     """)
-    df = repair_feature_frame(df)
+    df = repair_feature_frame(df).sort_values('household_key').reset_index(drop=True)
     con.register("features_df", df); con.execute("CREATE OR REPLACE TABLE mart_customer_features AS SELECT * FROM features_df")
     return df
 
@@ -225,8 +225,9 @@ def export_tables(con):
     tables=["mart_baskets","mart_household_period","mart_products","mart_categories","mart_campaigns","mart_coupon_redemptions","mart_customer_features","mart_promotion_performance","mart_category_period","mart_category_diagnostics","customer_period_summary","customer_retention_matrix","campaign_bias_comparison","campaign_segment_analysis","kpi_summary","validation_checks"]
     counts={}
     for t in tables:
-        df=q(con,f"SELECT * FROM {t}"); counts[t]=len(df); df.to_csv(TABLES/f"{t}.csv",index=False)
-    q(con,"SELECT * FROM mart_customer_features").to_csv(TABLES/"feature_ready_households.csv",index=False)
+        df=q(con,f'SELECT * FROM {t}'); counts[t]=len(df)
+        df.sort_values(list(df.columns)).to_csv(TABLES/f'{t}.csv',index=False)
+    q(con,'SELECT * FROM mart_customer_features ORDER BY household_key').to_csv(TABLES/'feature_ready_households.csv',index=False)
     return counts
 
 def ci_mean(s):
@@ -272,7 +273,7 @@ def write_docs(con,present,counts,charts,st):
     (ROOT/"final_recommendation_memo.md").write_text(f"# Final Recommendation Memo\n\n## Executive Summary\nThe retailer should prioritize high-value customer retention, category actions that combine scale with penetration and stability, and randomized testing for campaign improvements. The evidence is strong for descriptive patterns and weaker for causal campaign claims.\n\n## KPI Snapshot\n- Active households: {int(k['active_households'])}\n- Baskets: {int(k['baskets'])}\n- Spend: {k['spend']:.2f}\n- Average basket value: {k['avg_basket_value']:.2f}\n- Coupon basket rate: {k['coupon_basket_rate']:.3f}\n\n## Finding 1: Customer value is concentrated\nUse high-value and declining household segments for retention operations instead of broad untargeted offers. Evidence is in the value concentration chart and feature mart.\n\n## Finding 2: Category decisions need denominator checks\n{md_table(cats)}\n\nPrioritize categories with sufficient household penetration and growth; investigate high-sales declining categories before reducing support.\n\n## Finding 3: Campaign results are associations, not proof\n{md_table(camp)}\n\nTypeA targeting creates strong selection-bias risk. TypeB/TypeC still need denominator and exposure caveats.\n\n## Recommended Experiment\nRun a household-randomized retention offer test for high-value declining households. Treatment receives a category-affinity coupon bundle; control receives business-as-usual. Primary metric: next 4-week spend per household. Guardrails: basket frequency, discount cost, redemption, category cannibalization, and customer complaints if available. Success requires practical lift, not just statistical significance.\n\n## Visual Evidence\nCharts: {', '.join(charts)}\n",encoding="ascii")
 
 def main():
-    ensure_dirs(); maybe_download(); write_sql_files(); con=duckdb.connect(str(DB)); present=load_raw(con)
+    ensure_dirs(); maybe_download(); write_sql_files(); con=duckdb.connect(str(DB)); con.execute('PRAGMA threads=1'); present=load_raw(con)
     missing=[k for k,v in present.items() if v is None and k!="causal_data"]
     if missing: raise SystemExit(f"Missing required raw files: {missing}")
     run_sql(con); apply_sql_enhancements(ROOT, con); features=build_features(con); counts=export_tables(con); charts=make_charts(con); st=enhance_statistics(con,features,analyze(con,features)); write_docs(con,present,counts,charts,st); from enrich_outputs import enrich_outputs; charts = enrich_outputs(ROOT, con, charts, st)

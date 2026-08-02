@@ -23,7 +23,7 @@ Alternate names supported by the loader include _transactiondata.csv, _hhdemogra
 
 ## Environment
 
-Python 3.11 was used for the final audit. Dependencies are exactly pinned in requirements.txt. SQL dialect is DuckDB SQL.
+Python 3.12.6 was used for the final audit. Dependencies are exactly pinned in requirements.txt. SQL dialect is DuckDB SQL.
 
     python -m venv .venv
     .venv\Scripts\Activate.ps1
@@ -51,7 +51,7 @@ The canonical pipeline writes and executes SQL in numeric order, exports all mar
 - sql/04_validation_checks.sql: baseline controls
 - sql/05_strengthen_analytics_and_validation.sql: corrected adjacent-period spine, category stability, exact-grain promotion analysis, bias-aware campaign tables, and expanded reconciliations
 
-SQL uses deterministic CREATE OR REPLACE statements, so reruns do not append duplicates.
+SQL uses deterministic CREATE OR REPLACE statements, stable export ordering, and fixed random seeds, so reruns do not append duplicates or reshuffle model inputs.
 
 ## Outputs
 

@@ -14,7 +14,7 @@ Empirical event probabilities use distinct baskets or prior-active household-per
 | --- | --- | --- |
 | 0.0606 | 0.1661 | 0.886 |
 
-- Average basket spend bootstrap 95% CI: (np.float64(28.997), np.float64(29.277))
+- Average basket spend bootstrap 95% CI: (np.float64(29.006), np.float64(29.276))
 - Household total spend bootstrap 95% CI: (np.float64(3102.6), np.float64(3350.263))
 - Spearman correlations: {'basket_spend': {'basket_spend': 1.0, 'basket_units': 0.8148, 'discount_rate': 0.1274}, 'basket_units': {'basket_spend': 0.8148, 'basket_units': 1.0, 'discount_rate': 0.1426}, 'discount_rate': {'basket_spend': 0.1274, 'basket_units': 0.1426, 'discount_rate': 1.0}}
 - Covariance matrix: {'basket_spend': {'basket_spend': 1303.3039, 'basket_units': 3071.8982, 'discount_rate': 0.1846}, 'basket_units': {'basket_spend': 3071.8982, 'basket_units': 11699286.6465, 'discount_rate': -94.6533}, 'discount_rate': {'basket_spend': 0.1846, 'basket_units': -94.6533, 'discount_rate': 0.0145}}
@@ -34,7 +34,7 @@ The customer-category matrix has 2500 household rows and 308 category columns, s
 
 ## Leakage-Safe Baseline Model
 
-Logistic regression predicts final-13-week activity from earlier features. A deterministic stratified split has 1874 training and 625 holdout households. Imputation, rare and unknown-safe encoding, scaling, and fitting use training households only. Future-period holdout AUC is 0.91 across 62 columns. Top coefficients: [('categorical__age_desc_65+', -2.214), ('categorical__income_desc_125-149K', -1.885), ('categorical__age_desc_45-54', 1.757), ('categorical__age_desc_19-24', -1.493), ('categorical__homeowner_desc_Unknown', -1.412), ('categorical__hh_comp_desc_2 Adults Kids', 1.298), ('categorical__age_desc_25-34', 1.282), ('categorical__income_desc_75-99K', -1.172), ('categorical__hh_comp_desc_2 Adults No Kids', -1.158), ('numeric__spend_trend_change', 1.084)]. AUC is not calibration or causal impact.
+Logistic regression predicts final-13-week activity from earlier features. A deterministic stratified split has 1874 training and 625 holdout households. Imputation, rare and unknown-safe encoding, scaling, and fitting use training households only. Future-period holdout AUC is 0.826 across 61 columns. Top coefficients: [('categorical__income_desc_125-149K', -2.001), ('categorical__age_desc_65+', -1.996), ('categorical__marital_status_code_U', 1.413), ('categorical__age_desc_45-54', 1.408), ('categorical__income_desc_35-49K', 1.275), ('categorical__income_desc_75-99K', -1.244), ('numeric__frequency_baskets', 1.207), ('categorical__hh_comp_desc_2 Adults Kids', 1.133), ('categorical__marital_status_code_A', -1.059), ('numeric__spend_trend_change', 1.001)]. AUC is not calibration or causal impact.
 
 ## Experiment Power
 

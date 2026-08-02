@@ -58,6 +58,7 @@ def repair_feature_frame(frame: pd.DataFrame) -> pd.DataFrame:
 
 def enhance_statistics(con, features: pd.DataFrame, base_stats: dict) -> dict:
     result = dict(base_stats)
+    features = features.sort_values('household_key').reset_index(drop=True)
     labels = ["future_spend", "next_period_active_flag", "next_period_spend_decline_flag"]
     predictors = features.drop(columns=labels + ["household_key", "household_key_1"], errors="ignore")
     numeric_columns = predictors.select_dtypes(include=[np.number]).columns.tolist()
@@ -74,7 +75,7 @@ def enhance_statistics(con, features: pd.DataFrame, base_stats: dict) -> dict:
     ])
     model = Pipeline([
         ("preprocessing", preprocessing),
-        ("model", LogisticRegression(max_iter=2000, class_weight="balanced")),
+        ('model', LogisticRegression(max_iter=2000, class_weight='balanced', random_state=42)),
     ])
     y = features["next_period_active_flag"].astype(int)
     indices = np.arange(len(features))
@@ -163,7 +164,10 @@ def write_enhanced_outputs(root: Path, con, charts: list[str], metrics: dict):
         "campaign_bias_comparison", "campaign_segment_analysis",
     ]
     for table in extra_tables:
-        q(con, f"SELECT * FROM {table}").to_csv(tables_dir / f"{table}.csv", index=False)
+        frame = q(con, f'SELECT * FROM {table}')
+        frame.sort_values(list(frame.columns)).to_csv(
+            tables_dir / f'{table}.csv', index=False
+        )
 
     descriptive = q(con, """
         SELECT AVG(basket_spend) AS mean_basket_spend, MEDIAN(basket_spend) AS median_basket_spend,
