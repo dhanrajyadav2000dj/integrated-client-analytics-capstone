@@ -39,7 +39,6 @@ Configure Kaggle credentials outside the repository. Then download, or manually 
     python src/run_pipeline.py
     python src/execute_notebook.py
     python -m pytest -q
-    python qa/strict_audit.py
 
 The canonical pipeline writes and executes SQL in numeric order, exports all marts and evidence tables, generates 12 charts, performs quantitative and leakage-safe model analysis, and regenerates the memo and documentation. The notebook is a reviewer entry point around that same pipeline; execute_notebook.py records an executed copy without requiring Jupyter.
 
@@ -57,7 +56,7 @@ SQL uses deterministic CREATE OR REPLACE statements, stable export ordering, and
 
 outputs/tables contains required marts plus customer period/cohort evidence, category diagnostics, campaign stratification, promotion performance, experiment MDE, KPI, and validation files. outputs/charts contains 12 labelled visuals. Root markdown files contain KPI contracts, feature/leakage definitions, quantitative evidence, assumptions, validation, and the final recommendation memo.
 
-Source grains and fan-out risks are in docs/source_relationship_map.md. Mart grains and keys are in docs/mart_catalog.md. Exact QA evidence and score are in qa/01 through qa/07 reports.
+Source grains and fan-out risks are in docs/source_relationship_map.md. Mart grains and keys are in docs/mart_catalog.md. Required validation evidence is in validation_report.md and outputs/tables/validation_checks.csv.
 
 ## Core Conventions
 

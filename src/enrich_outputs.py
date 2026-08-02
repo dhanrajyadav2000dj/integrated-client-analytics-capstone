@@ -306,7 +306,7 @@ Campaign eligibility rules, true send/open/click exposure, offer cost and margin
 - Tables: `outputs/tables/`
 - Charts: `outputs/charts/`
 - Chart interpretations: `visual_evidence_interpretations.md`
-- QA readiness: `qa/FINAL_SUBMISSION_READINESS.md`
+- Validation evidence: `validation_report.md` and `outputs/tables/validation_checks.csv`
 """, encoding="ascii")
 
     # Rich notebook for reviewers who open the ipynb first.
@@ -315,7 +315,7 @@ Campaign eligibility rules, true send/open/click exposure, offer cost and margin
             {"cell_type": "markdown", "metadata": {}, "source": ["# Integrated Client Analytics Capstone\n", "\n", "This notebook is a reviewer-friendly entry point. The canonical reproducible pipeline is `src/run_pipeline.py`, which regenerates SQL, marts, charts, validation reports, and memo files.\n"]},
             {"cell_type": "markdown", "metadata": {}, "source": ["## Scope And Depth Tracks\n", "\n", "Depth tracks: customer value/retention, category performance, and campaign/coupon effectiveness. Campaign results are treated as observational associations, not causal proof.\n"]},
             {"cell_type": "code", "execution_count": None, "metadata": {}, "outputs": [], "source": ["%run ../src/run_pipeline.py"]},
-            {"cell_type": "markdown", "metadata": {}, "source": ["## Manual Review Files\n", "\n", "After running the cell above, review `final_recommendation_memo.md`, `validation_report.md`, `quantitative_analysis_appendix.md`, `campaign_bias_analysis.md`, `visual_evidence_interpretations.md`, and `qa/FINAL_SUBMISSION_READINESS.md`.\n"]},
+            {"cell_type": "markdown", "metadata": {}, "source": ["## Manual Review Files\n", "\n", "After running the cell above, review `final_recommendation_memo.md`, `validation_report.md`, `quantitative_analysis_appendix.md`, `campaign_bias_analysis.md`, `visual_evidence_interpretations.md`, and `outputs/tables/validation_checks.csv`.\n"]},
         ],
         "metadata": {"kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"}, "language_info": {"name": "python", "version": "3"}},
         "nbformat": 4,

@@ -279,9 +279,11 @@ def test_quantitative_model_and_documentation_evidence():
         assert (ROOT / rel).stat().st_size > 300
 
 
-def test_required_numbered_qa_artifacts_will_be_generated():
-    generator = ROOT / "qa" / "strict_audit.py"
-    assert generator.exists()
-    text = generator.read_text(errors="ignore")
-    for number in range(1, 8):
-        assert f"0{number}_" in text
+def test_required_validation_artifacts_exist():
+    for relative_path in [
+        "validation_report.md",
+        "outputs/tables/validation_checks.csv",
+    ]:
+        artifact = ROOT / relative_path
+        assert artifact.exists()
+        assert artifact.stat().st_size > 300

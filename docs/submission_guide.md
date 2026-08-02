@@ -8,7 +8,7 @@ Review in this order:
 4. quantitative_analysis_appendix.md
 5. customer_analysis.md, category_analysis.md, and campaign_bias_analysis.md
 6. outputs/charts and outputs/tables
-7. qa/07_FINAL_SUBMISSION_READINESS.md
+7. assumptions_and_limitations.md and ai_assistance_declaration.md
 
 Reproduce with:
 
@@ -17,6 +17,5 @@ python src/download_data.py
 python src/run_pipeline.py
 python src/execute_notebook.py
 python -m pytest -q
-python qa/strict_audit.py
 
 Raw data is local and ignored by Git. Never commit Kaggle credentials.
